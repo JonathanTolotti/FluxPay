@@ -5,45 +5,46 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: fluxpay_app
+    image: fluxpay-app
+    container_name: fluxpay-app
+    ports:
+      - "9000:9000"
     volumes:
-      - .:/var/www
-    depends_on:
-      - mysql
+      - ./src:/var/www
+    working_dir: /var/www
     networks:
-      - fluxpay_net
+      - fluxpay
 
-  mysql:
-    image: mysql:8
-    container_name: fluxpay_mysql
-    restart: always
+  web:
+    image: nginx:alpine
+    container_name: fluxpay-nginx
+    ports:
+      - "8000:80"
+    volumes:
+      - ./src:/var/www
+      - ./docker/nginx/default.conf:/etc/nginx/conf.d/default.conf
+    depends_on:
+      - app
+    networks:
+      - fluxpay
+
+  db:
+    image: mysql:8.0
+    container_name: fluxpay-db
     environment:
-      MYSQL_DATABASE: fluxpay
       MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: fluxpay
       MYSQL_USER: fluxuser
       MYSQL_PASSWORD: fluxpass
     ports:
       - "3306:3306"
     volumes:
-      - mysql_data:/var/lib/mysql
+      - dbdata:/var/lib/mysql
     networks:
-      - fluxpay_net
-
-  nginx:
-    image: nginx:alpine
-    container_name: fluxpay_nginx
-    ports:
-      - "8000:80"
-    volumes:
-      - .:/var/www
-      - ./docker/nginx/default.conf:/etc/nginx/conf.d/default.conf
-    depends_on:
-      - app
-    networks:
-      - fluxpay_net
+      - fluxpay
 
 volumes:
-  mysql_data:
+  dbdata:
 
 networks:
-  fluxpay_net:
+  fluxpay:
